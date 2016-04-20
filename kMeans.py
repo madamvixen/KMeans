@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 
 
 ##stdin processing
+from sympy import Transpose, sqrt
+
 k_num_centroid = int(sys.argv[1])
 
 max_iter_allowed = int(sys.argv[3])
@@ -160,7 +162,7 @@ print "Number of iterations : %d\n" %knearest_iterations_count
 
 f = open('kmeans.out','r+')
 x = []
-y = []
+labels = []
 
 for observations_new in xrange(len(data_point_list)):
     f.write("%d\t"%data_point_list[observations_new][0])
@@ -168,7 +170,7 @@ for observations_new in xrange(len(data_point_list)):
     # f.write("%f\t"%data_point_list[observations_new][1])
     # f.write("%f\t"%data_point_list[observations_new][2])
     f.write("%d\n"%data_point_list[observations_new][3])
-    y.append(data_point_list[observations_new][3])
+    labels.append(data_point_list[observations_new][3])
 
 f.close();
 
@@ -178,25 +180,43 @@ centroids = new_centroid
 
 # reduce dimensionality
 dataMatrix = np.array(data)
-users_pca = mlab.PCA(dataMatrix)
+users_pca = mlab.PCA(dataMatrix) #using principal component analysis
 cutoff = users_pca.fracs[1]
 users_2d = users_pca.project(dataMatrix, minfrac=cutoff)
 centroids_2d = users_pca.project(centroids, minfrac=cutoff)
 
 # make a plot
-colors = ['red', 'green', 'blue']
-plt.figure()
-plt.xlim([users_2d[:,0].min() - .5, users_2d[:,0].max() + .5])
-plt.ylim([users_2d[:,1].min() - .5, users_2d[:,1].max() + .5])
-plt.xticks([], []); plt.yticks([], []) # numbers aren't meaningful
 
+# h = 0.4
+x_min, x_max = users_2d[:,0].min() - .5, users_2d[:,0].max() + .5
+y_min, y_max = users_2d[:,1].min() - .5, users_2d[:,1].max() + .5
 
-idx,_ = vq(users_2d,centroids_2d)
+h = (x_max - x_min)/(len(labels))
+# print h
 
-# some plotting using numpy's logical indexing
-plt.plot(users_2d[idx==0,0],users_2d[idx==0,1],'.r',
-         users_2d[idx==1,0],users_2d[idx==1,1],'.b')
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
-# show the centroids
-plt.scatter(centroids_2d[:,0], centroids_2d[:,1], 'sg', s=200)
+# Obtain labels for each point in mesh. Use last trained model.
+Z = np.asarray(labels)
+
+# Put the result into a color plot
+# Z = Z.reshape(xx.shape)
+plt.figure(1)
+plt.clf()
+# plt.imshow(Z, interpolation='nearest',
+#            extent=(xx.min(), xx.max(), yy.min(), yy.max()),
+#            cmap=plt.cm.Paired,
+#            aspect='auto', origin='lower')
+
+plt.plot(users_2d[:, 0], users_2d[:, 1], 'k.', markersize=2)
+# Plot the centroids as a white X
+plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1],
+            marker='x', s=169, linewidths=3,
+            color='r', zorder=10)
+plt.title('K-means clustering on PCA-reduced data\n'
+          'Centroids are marked with white cross')
+plt.xlim(x_min, x_max)
+plt.ylim(y_min, y_max)
+plt.xticks(())
+plt.yticks(())
 plt.show()
